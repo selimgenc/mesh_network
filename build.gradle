@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.6'
+    id 'io.spring.dependency-management' version '1.1.5'
+    id 'idea'
+}
+
+group = 'me.selim'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'io.micrometer:micrometer-core'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.register('runOnContainer', Exec) {
+    dependsOn tasks.build
+    commandLine 'docker-compose', 'up', '--build'
+}
+
+tasks.build {
+    // Exclude tests when the 'runOnContainer' task is called
+    tasks.withType(Test).tap {
+        configureEach {
+            if (gradle.startParameter.taskNames.contains('runOnContainer')) {
+                enabled = false
+            }
+        }
+    }
+}
+
+tasks.register('stopAndRemoveContainers', Exec) {
+    commandLine 'docker-compose', 'down'
+}
+
