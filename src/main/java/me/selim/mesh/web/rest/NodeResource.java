@@ -187,7 +187,7 @@ public class NodeResource {
     @ApiResponse(responseCode = "200", description = "List of all connections between nodes in a sorted way", content = {
             @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = ConnectionDto.class)))
     })
-    @GetMapping("/nodes/connections")
+    @GetMapping("/connections")
     ResponseEntity<List<EntityModel<ConnectionDto>>> getAllConnections(@RequestParam SortCriteria criteria, @RequestParam SortType sortType) {
         ConnectionSorter sorter = ConnectionSorterFactory.getSorter(criteria);
         List<ConnectionDto> sortedConnections = sorter.sort(repository.findAll(), sortType)
@@ -195,7 +195,7 @@ public class NodeResource {
 
         List<EntityModel<ConnectionDto>> sortedAndLinkedConnections = sortedConnections.stream().map(dto -> EntityModel.of(dto,
                         linkTo(methodOn(NodeResource.class).getConnectionBetweenNodes(dto.nodes().get(0).id(), dto.nodes().get(1).id()))
-                                .withRel(String.format("connection between nodes " + dto.nodes().get(0).name() + " and " + dto.nodes().get(1).name()))
+                                .withRel(String.format("Nodes: " + dto.nodes().get(0).name() + " and " + dto.nodes().get(1).name()))
                 )
         ).toList();
         return ResponseEntity.ok(sortedAndLinkedConnections);

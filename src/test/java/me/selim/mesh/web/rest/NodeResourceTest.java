@@ -8,12 +8,17 @@ import me.selim.mesh.infrastructure.NodeRepository;
 import me.selim.mesh.service.NodeService;
 import me.selim.mesh.service.PathFinder;
 import me.selim.mesh.web.rest.mapper.ConnectionMapper;
+import me.selim.mesh.web.rest.model.ConnectionDto;
+import me.selim.mesh.web.rest.model.NodeDto;
+import me.selim.mesh.web.rest.model.SortCriteria;
+import me.selim.mesh.web.rest.model.SortType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -42,7 +48,7 @@ public class NodeResourceTest {
     @MockBean
     PathFinder pathFinder;
 
-    @MockBean
+    @SpyBean
     ConnectionMapper connectionMapper;
 
     @Autowired
@@ -162,6 +168,29 @@ public class NodeResourceTest {
         when(pathFinder.findOptimalRoute(1L, 2L)).thenReturn(new Route(List.of(start, middle, end), 4));
 
         mockMvc.perform(get(NODE_URL + "/shortestPath/{toId}", 1, 2))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Get All Connections with valid Criteria")
+    void test_getAllConnection_with_valid_Criteria() throws Exception {
+        SortCriteria criteria = SortCriteria.DISTANCE;
+        SortType type = SortType.DESC;
+        Connection c1_2 = new Connection(1L, 2L, 5);
+        Connection c2_3 = new Connection(2L, 3L, 10);
+        Node n1 = new Node(1L, "N1", Set.of(c1_2));
+        Node n2 = new Node(2L, "N2", Set.of(c1_2, c2_3));
+        Node n3 = new Node(3L, "N3", Set.of(c2_3));
+        List<Node> nodes = List.of(n1, n2, n3);
+
+        when(nodeRepository.findAll()).thenReturn(nodes);
+        when(nodeRepository.findById(1L)).thenReturn(Optional.of(n1));
+        when(nodeRepository.findById(2L)).thenReturn(Optional.of(n2));
+        when(nodeRepository.findById(3L)).thenReturn(Optional.of(n3));
+        when(connectionMapper.mapWithNameOnly(any())).thenCallRealMethod();
+        mockMvc.perform(get(NODES_URL + "/connections")
+                        .param("criteria", criteria.name())
+                        .param("sortType", type.name()))
                 .andExpect(status().isOk());
     }
 }
